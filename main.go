@@ -38,13 +38,13 @@ func main() {
 	serveMux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
 
 	// Add handler for the readiness
-	serveMux.HandleFunc("/healthz", handlerReadiness)
+	serveMux.HandleFunc("GET /healthz", handlerReadiness)
 
 	// Add handler for number of requests
-	serveMux.HandleFunc("/metrics", apiCfg.handlerMetrics)
+	serveMux.HandleFunc("GET /metrics", apiCfg.handlerMetrics)
 
 	// Add handler for reset number of hits
-	serveMux.HandleFunc("/reset", apiCfg.handlerResetHit)
+	serveMux.HandleFunc("POST /reset", apiCfg.handlerResetHit)
 
 	httpServer := &http.Server{
 		Handler: serveMux,
