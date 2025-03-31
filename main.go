@@ -4,27 +4,11 @@ import (
 	"net/http"
 	"log"
 	"sync/atomic"
-	"fmt"
 )
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
 }
-
-func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func (w http.ResponseWriter, req *http.Request) {
-		cfg.fileserverHits.Add(1)
-		next.ServeHTTP(w, req)
-	})
-}
-
-func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())))
-}
-
-
 
 func main() {
 	const filepathRoot = "."
@@ -41,10 +25,10 @@ func main() {
 	serveMux.HandleFunc("GET /api/healthz", handlerReadiness)
 
 	// Add handler for number of requests
-	serveMux.HandleFunc("GET /api/metrics", apiCfg.handlerMetrics)
+	serveMux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
 
 	// Add handler for reset number of hits
-	serveMux.HandleFunc("POST /api/reset", apiCfg.handlerResetHit)
+	serveMux.HandleFunc("POST /admin/reset", apiCfg.handlerResetHit)
 
 	httpServer := &http.Server{
 		Handler: serveMux,
