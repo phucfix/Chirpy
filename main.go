@@ -10,5 +10,8 @@ func main() {
 		Handler: serveMux,
 		Addr: ":8080",
 	}
+	// Add handler for the root path (/)
+	serveMux.Handle("/", http.FileServer(http.Dir(".")))
+
 	httpServer.ListenAndServe()
 }
