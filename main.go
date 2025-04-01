@@ -4,17 +4,33 @@ import (
 	"net/http"
 	"log"
 	"sync/atomic"
+	"os"
+	"database/sql"
+	_ "github.com/lib/pq"
+
+	"github.com/phucfix/chirpy/internal/database"
 )
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	dbQueries	   *database.Queries
 }
 
 func main() {
+	dbURL := os.Getenv("DB_URL")
+	// Open a connection to database
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal("Can't open connection to the database: %w", err)
+	}
+	// Create a new *database.Queries
+	dbQueries := database.New(db)
+
 	const filepathRoot = "."
 	const port = "8080"
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
+		dbQueries: dbQueries,
 	}
 
 	serveMux := http.NewServeMux()

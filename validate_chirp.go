@@ -25,7 +25,6 @@ func handleValidateChirp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-
 	// Validation
 	if len(chirpReq.Body) > 140 {
 		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
