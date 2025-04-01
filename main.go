@@ -29,6 +29,7 @@ func main() {
 
 	// Add handler for reset number of hits
 	serveMux.HandleFunc("POST /admin/reset", apiCfg.handlerResetHit)
+	serveMux.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
 
 	httpServer := &http.Server{
 		Handler: serveMux,
