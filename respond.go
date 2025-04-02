@@ -18,13 +18,14 @@ func respondWithError(w http.ResponseWriter, code int,	msg string) {
 
 func respondWithJSON(w http.ResponseWriter, code int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
+
 	data, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("Error marshaling JSON: %v", err)
 		w.WriteHeader(500)
-		w.Write([]byte(`{"error":"Server error"}`))
 		return
 	}
+
 	w.WriteHeader(code)
 	w.Write(data)
 }

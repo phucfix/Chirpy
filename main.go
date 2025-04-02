@@ -6,7 +6,9 @@ import (
 	"sync/atomic"
 	"os"
 	"database/sql"
+
 	_ "github.com/lib/pq"
+	"github.com/joho/godotenv"
 
 	"github.com/phucfix/chirpy/internal/database"
 )
@@ -14,10 +16,19 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	dbQueries	   *database.Queries
+	platform       string
 }
 
 func main() {
+	// Load enviroment variable
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+		os.Exit(1)
+	}
+	
+	platform := os.Getenv("PLATFORM")
 	dbURL := os.Getenv("DB_URL")
+
 	// Open a connection to database
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -31,6 +42,7 @@ func main() {
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 		dbQueries: dbQueries,
+		platform:  platform,
 	}
 
 	serveMux := http.NewServeMux()
@@ -44,8 +56,9 @@ func main() {
 	serveMux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
 
 	// Add handler for reset number of hits
-	serveMux.HandleFunc("POST /admin/reset", apiCfg.handlerResetHit)
+	serveMux.HandleFunc("POST /admin/reset", apiCfg.handlerDeleteUser)
 	serveMux.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
+	serveMux.HandleFunc("POST /api/users", apiCfg.handleCreateUser)
 
 	httpServer := &http.Server{
 		Handler: serveMux,
