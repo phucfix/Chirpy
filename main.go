@@ -64,6 +64,7 @@ func main() {
 	// Chirps API
 	serveMux.HandleFunc("POST /api/chirps", apiCfg.handlerCreateChirp)
 	serveMux.HandleFunc("GET /api/chirps", apiCfg.handlerGetChirps)
+	serveMux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.handlerGetChirp)
 
 	httpServer := &http.Server{
 		Handler: serveMux,
