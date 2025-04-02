@@ -58,8 +58,12 @@ func main() {
 	// Add handler for reset number of hits
 	serveMux.HandleFunc("POST /admin/reset", apiCfg.handlerDeleteUser)
 
+	// User API
 	serveMux.HandleFunc("POST /api/users", apiCfg.handleCreateUser)
+
+	// Chirps API
 	serveMux.HandleFunc("POST /api/chirps", apiCfg.handlerCreateChirp)
+	serveMux.HandleFunc("GET /api/chirps", apiCfg.handlerGetChirps)
 
 	httpServer := &http.Server{
 		Handler: serveMux,

@@ -59,3 +59,13 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, req *http.Reques
 		UserID: chirp.UserID,
 	})
 }
+
+func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, req *http.Request) {
+	chirps, err := cfg.dbQueries.GetChirps(req.Context())
+	if err != nil {
+		log.Printf("Unable to get all chirps: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "Unable to get chirps")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, chirps)
+}
