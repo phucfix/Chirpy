@@ -7,6 +7,9 @@ import (
 	"encoding/json"
 
 	"github.com/google/uuid"
+
+	"github.com/phucfix/chirpy/internal/auth"
+	"github.com/phucfix/chirpy/internal/database"
 )
 
 type User struct {
@@ -18,7 +21,8 @@ type User struct {
 
 func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, req *http.Request) {
 	type reqParams struct {
-		Email string `json:"email"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 
 	decoder := json.NewDecoder(req.Body)
@@ -29,7 +33,16 @@ func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	user, err := cfg.dbQueries.CreateUser(req.Context(), request.Email)
+	// Create new user in database
+	hashPassword, err := auth.HashPassword(request.Password)
+	if err != nil {
+		log.Printf("Failed to hash password: %v", err)
+	}
+
+	user, err := cfg.dbQueries.CreateUser(req.Context(), database.CreateUserParams{
+		Email: request.Email,
+		HashedPassword: hashPassword,
+	})
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
 		respondWithError(w, http.StatusUnauthorized, "Error creating user")
