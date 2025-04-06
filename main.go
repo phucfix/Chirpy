@@ -17,6 +17,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	dbQueries	   *database.Queries
 	platform       string
+	jwtSecret	   string
 }
 
 func main() {
@@ -28,6 +29,7 @@ func main() {
 	
 	platform := os.Getenv("PLATFORM")
 	dbURL := os.Getenv("DB_URL")
+	jwtSecret := os.Getenv("JWT_SECRET")
 
 	// Open a connection to database
 	db, err := sql.Open("postgres", dbURL)
@@ -43,6 +45,7 @@ func main() {
 		fileserverHits: atomic.Int32{},
 		dbQueries: dbQueries,
 		platform:  platform,
+		jwtSecret: jwtSecret,
 	}
 
 	serveMux := http.NewServeMux()

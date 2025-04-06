@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/phucfix/chirpy/internal/database"
+	"github.com/phucfix/chirpy/internal/auth"
 )
 
 type Chirp struct {
@@ -23,8 +24,8 @@ type Chirp struct {
 
 func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, req *http.Request) {
 	type reqParams struct {
-		Body string `json:"body"`
-		UserID uuid.UUID `json:"user_id"`
+		Body 	string `json:"body"`
+		UserID 	uuid.UUID `json:"user_id"`
 	}
 
 	decoder := json.NewDecoder(req.Body)
@@ -41,6 +42,26 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
+	// Validate JWT
+	token, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		log.Printf("Error get bearer token: %v", err)
+		respondWithError(w, http.StatusUnauthorized, "Can't get bearer token")
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		log.Printf("Error validating JWT: %v", err)
+		respondWithError(w, http.StatusUnauthorized, "Can't validate JWT")
+		return
+	}
+
+	if userID == uuid.Nil {
+		log.Printf("Can't identify the user")
+		respondWithError(w, http.StatusUnauthorized, "Can't validate user") 
+	}
+
 	chirp, err := cfg.dbQueries.CreateChirp(req.Context(), database.CreateChirpParams{
 		Body: profanity(request.Body),
 		UserID: request.UserID,
@@ -50,7 +71,7 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, req *http.Reques
 		respondWithError(w, http.StatusUnauthorized, "Error creating chirp")
 		return
 	}
-
+	
 	respondWithJSON(w, http.StatusCreated, Chirp{
 		ID: chirp.ID,
 		Body: chirp.Body, 
