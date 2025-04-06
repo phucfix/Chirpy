@@ -60,11 +60,12 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, req *http.Reques
 	if userID == uuid.Nil {
 		log.Printf("Can't identify the user")
 		respondWithError(w, http.StatusUnauthorized, "Can't validate user") 
+		return
 	}
 
 	chirp, err := cfg.dbQueries.CreateChirp(req.Context(), database.CreateChirpParams{
 		Body: profanity(request.Body),
-		UserID: request.UserID,
+		UserID: userID,
 	})
 	if err != nil {
 		log.Printf("Error creating chirp: %v", err)
