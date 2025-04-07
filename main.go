@@ -18,6 +18,7 @@ type apiConfig struct {
 	dbQueries	   *database.Queries
 	platform       string
 	jwtSecret	   string
+	polkaAPIKEY    string
 }
 
 func main() {
@@ -30,6 +31,7 @@ func main() {
 	platform := os.Getenv("PLATFORM")
 	dbURL := os.Getenv("DB_URL")
 	jwtSecret := os.Getenv("JWT_SECRET")
+	polkaAPIKey := os.Getenv("POLKA_KEY")
 
 	// Open a connection to database
 	db, err := sql.Open("postgres", dbURL)
@@ -43,9 +45,10 @@ func main() {
 	const port = "8080"
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
-		dbQueries: dbQueries,
-		platform:  platform,
-		jwtSecret: jwtSecret,
+		dbQueries: 		dbQueries,
+		platform:  		platform,
+		jwtSecret: 		jwtSecret,
+		polkaAPIKEY: 	polkaAPIKey,
 	}
 
 	serveMux := http.NewServeMux()

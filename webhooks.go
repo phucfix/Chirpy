@@ -6,9 +6,25 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+
+	"github.com/phucfix/chirpy/internal/auth"
 )
 
 func (cfg *apiConfig) handlerWebHooks(w http.ResponseWriter, req *http.Request) {
+	// Validate API for Polka Key
+	polkaAPIKey, err := auth.GetAPIKey(req.Header)
+	if err != nil {
+		log.Printf("Error get API key: %v", err)
+		respondWithError(w, http.StatusUnauthorized, "Can't get API key")
+		return
+	}
+	
+	if polkaAPIKey != cfg.polkaAPIKEY {
+		log.Printf("Wrong API Key")
+		respondWithError(w, http.StatusUnauthorized, "Wrong API Key")
+		return
+	}
+	
 	type Data struct {
 		UserId string `json:"user_id"`
 	}
