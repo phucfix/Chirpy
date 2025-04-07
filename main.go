@@ -64,6 +64,7 @@ func main() {
 	// User API
 	serveMux.HandleFunc("POST /api/users", apiCfg.handleCreateUser)
 	serveMux.HandleFunc("POST /api/login", apiCfg.handleLogin)
+	serveMux.HandleFunc("PUT /api/users", apiCfg.handlerUpdateUser)
 
 	// Chirps API
 	serveMux.HandleFunc("POST /api/chirps", apiCfg.handlerCreateChirp)
