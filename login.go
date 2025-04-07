@@ -7,18 +7,18 @@ import (
 	"log"
 
 	"github.com/phucfix/chirpy/internal/auth"
+	"github.com/phucfix/chirpy/internal/database"
 )
 
 const (
-	defaultExpiration = 1 * time.Hour
-	maxExpiration	  = 1 * time.Hour
+	tokenExpirationTime 	   = 1 * time.Hour
+	refreshTokenExpirationTime = 60 * 24 * time.Hour
 )
 
 func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 	type reqParams struct {
 		Password string	`json:"password"`
 		Email 	 string `json:"email"`
-		ExpireIn *int	`json:"expires_in_seconds"`
 	}
 
 	decoder := json.NewDecoder(req.Body)
@@ -43,33 +43,30 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Config expire time for jwt
-	var expireTime time.Duration
-
-	// If client specify expiration time
-	if request.ExpireIn != nil {
-		// Invalid expiration
-		if *request.ExpireIn <= 0 {
-			log.Printf("Invalid expiration time")
-			respondWithError(w, http.StatusBadRequest, "Invalid expiration time, must be greate than 0")
-			return
-		}
-
-		expireTime = time.Duration(*request.ExpireIn) * time.Second
-		
-		if expireTime > maxExpiration {
-			expireTime = defaultExpiration
-		}
-
-	} else {
-		expireTime = defaultExpiration
-	}
-
 	// Create token
-	token, err := auth.MakeJWT(user.ID, cfg.jwtSecret, expireTime)
+	token, err := auth.MakeJWT(user.ID, cfg.jwtSecret, tokenExpirationTime)
 	if err != nil {
 		log.Printf("Can't create json web token: %v", err)
-		respondWithError(w, http.StatusBadRequest, "Can't create json web token")
+		respondWithError(w, http.StatusInternalServerError, "Can't create json web token")
+		return
+	}
+
+	// Create refresh token
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		log.Printf("Can't create the refresh token: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "Can't create refresh token")
+		return
+	}
+
+	dbToken, err := cfg.dbQueries.CreateRefreshToken(req.Context(), database.CreateRefreshTokenParams{
+		Token: refreshToken,
+		ExpiresAt: time.Now().UTC().Add(refreshTokenExpirationTime),
+		UserID: user.ID,
+	})
+	if err != nil {
+		log.Printf("Can't create token in database")
+		respondWithError(w, http.StatusInternalServerError, "Can't create token in database")
 		return
 	}
 
@@ -79,5 +76,6 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, req *http.Request) {
 		UpdatedAt: user.UpdatedAt,
 		Email: user.Email,
 		Token: token,
+		RefreshToken: dbToken.Token,
 	})
 }

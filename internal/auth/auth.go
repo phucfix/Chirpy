@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"encoding/hex"
 	"strings"
 	"errors"
 	"fmt"
 	"net/http"
+	"crypto/rand"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -39,4 +41,19 @@ func GetBearerToken(headers http.Header) (string, error) {
 
 	// The token is the second part
 	return parts[1], nil
+}
+
+// Generate a random 256-bit (32-byte) hex-encoded string
+func MakeRefreshToken() (string, error) {
+	// Create container for contain random data (256 bit)
+	key := make([]byte, 32)
+
+	// Fill the safety data
+	_, err := rand.Read(key)
+	if err != nil {
+		return "", err
+	}
+
+	// Convert the random data to a hex string
+	return hex.EncodeToString(key), nil
 }
