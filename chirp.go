@@ -5,6 +5,8 @@ import (
 	"time"
 	"encoding/json"
 	"log"
+	"strings"
+	"sort"
 
 	"github.com/google/uuid"
 
@@ -83,12 +85,41 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, req *http.Reques
 }
 
 func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, req *http.Request) {
-	chirps, err := cfg.dbQueries.GetChirps(req.Context())
-	if err != nil {
-		log.Printf("Unable to get all chirps: %v", err)
-		respondWithError(w, http.StatusInternalServerError, "Unable to get chirps")
-		return
+	// Optional query parameter named author_id
+	// If the author_id query parameter is provided, the endpoint should return only the chirps for that author
+	// Else the endpoint should return all chirps as it did before
+
+	// Grab the query parameters from the URL
+	authorId := req.URL.Query().Get("author_id")
+	
+	sortQuery := req.URL.Query().Get("sort")
+	// if it exists, or an empty string if it doesn't
+
+	var chirps []database.Chirp
+	var err error
+	if authorId == "" {
+		chirps, err = cfg.dbQueries.GetChirps(req.Context())
+		if err != nil {
+			log.Printf("Unable to get all chirps: %v", err)
+			respondWithError(w, http.StatusBadRequest, "Unable to get chirps")
+			return
+		}
+	} else {
+		authorUUID, err := uuid.Parse(authorId)
+		if err != nil {
+			log.Printf("Can't parse author uuid: %v", err)
+			respondWithError(w, http.StatusBadRequest, "Can't parse author uuid")
+			return
+		}
+
+		chirps, err = cfg.dbQueries.GetChirpsByUserId(req.Context(), authorUUID)
+		if err != nil {
+			log.Printf("Unable to get chirps by author id: %v", err)
+			respondWithError(w, http.StatusNotFound, "Unable to get chirps by author")
+			return
+		}
 	}
+
 	
 	var chirpResp []Chirp
 	for _, v := range chirps {
@@ -100,6 +131,15 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, req *http.Request)
 			UserID: v.UserID,
 		})
 	}
+
+	// Sort the chirps
+	if strings.ToLower(sortQuery) == "desc" {
+		
+		sort.Slice(chirpResp, func(i, j int) bool {
+			return chirpResp[j].CreatedAt.Before(chirpResp[i].CreatedAt)
+		})
+	}
+
 	respondWithJSON(w, http.StatusOK, chirpResp)
 }
 
